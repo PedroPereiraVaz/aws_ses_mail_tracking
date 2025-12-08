@@ -6,5 +6,6 @@ from odoo import api, fields, models
 
 class MailingTrace(models.Model):
     _inherit = 'mailing.trace'
-
-    ses_message_id = fields.Char("SES Message-ID")
+    _description = 'Mailing Trace with SES Support'
+    
+    ses_message_id = fields.Char("SES Message-ID", index=True, help="Amazon SES Message ID for tracking")
