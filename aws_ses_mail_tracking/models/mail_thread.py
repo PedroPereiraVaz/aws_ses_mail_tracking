@@ -16,7 +16,7 @@ class MailThread(models.AbstractModel):
     def _message_route_process(self, message, message_dict, routes):
         if routes:
             thread_references = message_dict['references'] or message_dict['in_reply_to']
-            msg_references = MAIL_HEADER_MSGID_RE.findall(thread_references or "")
+            msg_references = self.MAIL_HEADER_MSGID_RE.findall(thread_references or "")
 
             # Normalizar IDs entrantes eliminando el dominio
             normalized_refs = [ref.split('@')[0] for ref in msg_references]
