@@ -30,12 +30,13 @@ class MailThread(models.AbstractModel):
             ])
 
             # Buscar coincidencias en SES message ID normalizado
-            self.env['mailing.trace'].set_opened(domain=[
-                ('ses_message_id', 'ilike', normalized_refs[0])
-            ])
-            self.env['mailing.trace'].set_replied(domain=[
-                ('ses_message_id', 'ilike', normalized_refs[0])
-            ])
+            if normalized_refs:
+                self.env['mailing.trace'].set_opened(domain=[
+                    ('ses_message_id', 'ilike', normalized_refs[0])
+                ])
+                self.env['mailing.trace'].set_replied(domain=[
+                    ('ses_message_id', 'ilike', normalized_refs[0])
+                ])
 
         return super()._message_route_process(message, message_dict, routes)
 
@@ -45,6 +46,86 @@ class MailThread(models.AbstractModel):
         """Override _routing_handle_bounce method to process if send mail with SES, message_id had been changed"""
 
         bounced_msg_ids = message_dict.get('bounced_msg_ids', [])
+
+        # SES Bounce/Complaint Analysis (RFC 3464 & RFC 5965)
+        bounce_details = []
+        try:
+            # Check Root Headers for Report Type (Fallback)
+            is_generic_complaint = False
+            is_generic_bounce = False
+            
+            if email_message.get_content_type() == 'multipart/report':
+                report_type = email_message.get_param('report-type')
+                if report_type == 'feedback-report':
+                    is_generic_complaint = True
+                elif report_type == 'delivery-status':
+                    is_generic_bounce = True
+
+            if email_message.is_multipart():
+                from email.parser import HeaderParser
+                
+                for part in email_message.walk():
+                    content_type = part.get_content_type()
+                    
+                    # 1. RFC 5965: Feedback Report (Complaint)
+                    if content_type == 'message/feedback-report':
+                        feedback_type = part.get('Feedback-Type')
+                        # If header not found on the part itself, parse the payload
+                        if not feedback_type:
+                            payload = part.get_payload()
+                            if isinstance(payload, str):
+                                msg_block = HeaderParser().parsestr(payload)
+                                feedback_type = msg_block.get('Feedback-Type')
+                        
+                        if feedback_type:
+                            bounce_details.append(f"Complaint: {feedback_type}")
+                            _logger.info(f"[SES BOUNCE] RFC 5965 Complaint: {feedback_type}")
+
+                    # 2. RFC 3464: Delivery Status Notification (Bounce)
+                    elif content_type == 'message/delivery-status':
+                        payload = part.get_payload()
+                        status_code = None
+                        
+                        if isinstance(payload, list):
+                            # Rare, but if multipart
+                            for subpart in payload:
+                                if subpart.get('Status'):
+                                    status_code = subpart.get('Status')
+                        elif isinstance(payload, str):
+                            # DSN format: Header blocks separated by blank lines
+                            # Block 1: Per-Message fields
+                            # Block 2+: Per-Recipient fields (contains Action, Status)
+                            blocks = payload.split('\n\n')
+                            for block in blocks:
+                                msg_block = HeaderParser().parsestr(block)
+                                if msg_block.get('Status'):
+                                    status_code = msg_block.get('Status')
+                                    # We take the first status found in a recipient block
+                                    break
+                                    
+                        if status_code:
+                            # 5.X.X = Hard, 4.X.X = Soft
+                            if status_code.startswith('5'):
+                                bounce_details.append(f"Hard Bounce (Code: {status_code})")
+                            elif status_code.startswith('4'):
+                                bounce_details.append(f"Soft Bounce (Code: {status_code})")
+                            _logger.info(f"[SES BOUNCE] RFC 3464 Status: {status_code}")
+
+            # Fallbacks if detailed parsing found nothing but headers matched
+            if not bounce_details:
+                if is_generic_complaint:
+                    bounce_details.append("Complaint (Generic/SES)")
+                elif is_generic_bounce:
+                    bounce_details.append("Bounce (Generic/SES)")
+
+            if bounce_details:
+                detail_str = " | ".join(bounce_details)
+                current_body = message_dict.get('body') or ''
+                message_dict['body'] = f"<p><b>SES Report: {detail_str}</b></p><br/>{current_body}"
+                _logger.info(f"[SES BOUNCE] Updated failure reason with: {detail_str}")
+
+        except Exception as e:
+            _logger.error(f"[SES BOUNCE] Error analyzing bounce details: {e}")
         
         # DEBUG: Log what we're searching for
         _logger.info(f"[SES BOUNCE DEBUG] bounced_msg_ids from Odoo: {bounced_msg_ids}")
