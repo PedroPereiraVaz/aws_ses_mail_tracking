@@ -29,9 +29,9 @@ class IrMailServer(models.Model):
     def connect(self, host=None, port=None, user=None, password=None, encryption=None,
                 smtp_from=None, ssl_certificate=None, ssl_private_key=None, smtp_debug=False, mail_server_id=None,
                 allow_archived=False):
-        """Override the connect method to integrate new SMTP class"""
+        """Sobrescribe el método connect para integrar la clase SMTP heredada"""
 
-        # Do not actually connect while running in test mode
+        # No conectar realmente si se está ejecutando en modo de prueba
         if modules.module.current_test:
             return
 
@@ -70,7 +70,7 @@ class IrMailServer(models.Model):
                     private_key = SSLCrypto.load_privatekey(FILETYPE_PEM, smtp_ssl_private_key)
                     ssl_context.use_certificate(certificate)
                     ssl_context.use_privatekey(private_key)
-                    # Check that the private key match the certificate
+                    # Verificar que la clave privada coincida con el certificado
                     ssl_context.check_privatekey()
                 except SSLCryptoError as e:
                     raise UserError(_('The private key or the certificate is not a valid file. \n%s', str(e)))
@@ -78,7 +78,7 @@ class IrMailServer(models.Model):
                     raise UserError(_('Could not load your certificate / private key. \n%s', str(e)))
 
         else:
-            # we were passed individual smtp parameters or nothing and there is no default server
+            # se pasaron parámetros smtp individuales o nada y no hay servidor predeterminado
             smtp_server = host or tools.config.get('smtp_server')
             smtp_port = tools.config.get('smtp_port', 25) if port is None else port
             smtp_user = user or tools.config.get('smtp_user')
@@ -90,7 +90,7 @@ class IrMailServer(models.Model):
 
             smtp_encryption = encryption
             if smtp_encryption is None and tools.config.get('smtp_ssl'):
-                smtp_encryption = 'starttls' # smtp_ssl => STARTTLS as of v7
+                smtp_encryption = 'starttls' # smtp_ssl => STARTTLS desde la v7
             smtp_ssl_certificate_filename = ssl_certificate or tools.config.get('smtp_ssl_certificate_filename')
             smtp_ssl_private_key_filename = ssl_private_key or tools.config.get('smtp_ssl_private_key_filename')
 
@@ -99,7 +99,7 @@ class IrMailServer(models.Model):
                     ssl_context = SSLContext(ssl.PROTOCOL_TLS)
                     ssl_context.use_certificate_chain_file(smtp_ssl_certificate_filename)
                     ssl_context.use_privatekey_file(smtp_ssl_private_key_filename)
-                    # Check that the private key match the certificate
+                    # Verificar que la clave privada coincida con el certificado
                     ssl_context.check_privatekey()
                 except SSLCryptoError as e:
                     raise UserError(_('The private key or the certificate is not a valid file. \n%s', str(e)))
@@ -121,33 +121,33 @@ class IrMailServer(models.Model):
                        "should do the trick."))
             connection = smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=SMTP_TIMEOUT)
         else:
-            # Change here: use smtplib_inherit for BHSoft
+            # Cambio aquí: usar smtplib_inherit para funcionalidad extendida
             connection = smtplib_inherit.SMTPInherit(smtp_server, smtp_port, timeout=SMTP_TIMEOUT)
             #####
 
         connection.set_debuglevel(smtp_debug)
         if smtp_encryption == 'starttls':
-            # starttls() will perform ehlo() if needed first
-            # and will discard the previous list of services
-            # after successfully performing STARTTLS command,
-            # (as per RFC 3207) so for example any AUTH
-            # capability that appears only on encrypted channels
-            # will be correctly detected for next step
+            # starttls() ejecutará ehlo() si es necesario primero
+            # y descartará la lista previa de servicios
+            # después de ejecutar exitosamente el comando STARTTLS,
+            # (según RFC 3207) así que por ejemplo cualquier capacidad AUTH
+            # que aparezca solo en canales encriptados
+            # será detectada correctamente para el siguiente paso
             connection.starttls(context=ssl_context)
 
         if smtp_user:
-            # Attempt authentication - will raise if AUTH service not supported
+            # Intentar autenticación - lanzará excepción si el servicio AUTH no es soportado
             local, at, domain = smtp_user.rpartition('@')
             if at:
                 smtp_user = local + at + idna.encode(domain).decode('ascii')
             mail_server._smtp_login(connection, smtp_user, smtp_password or '')
 
-        # Some methods of SMTP don't check whether EHLO/HELO was sent.
-        # Anyway, as it may have been sent by login(), all subsequent usages should consider this command as sent.
+        # Algunos métodos SMTP no verifican si EHLO/HELO fue enviado.
+        # De todos modos, como puede haber sido enviado por login(), todos los usos subsiguientes deberían considerar este comando como enviado.
         connection.ehlo_or_helo_if_needed()
 
-        # Store the "from_filter" of the mail server / odoo-bin argument to  know if we
-        # need to change the FROM headers or not when we will prepare the mail message
+        # Almacenar el "from_filter" del servidor de correo / argumento odoo-bin para saber si
+        # necesitamos cambiar las cabeceras FROM o no cuando preparemos el mensaje de correo
         connection.from_filter = from_filter
         connection.smtp_from = smtp_from
 
@@ -158,7 +158,7 @@ class IrMailServer(models.Model):
                    smtp_user=None, smtp_password=None, smtp_encryption=None,
                    smtp_ssl_certificate=None, smtp_ssl_private_key=None,
                    smtp_debug=False, smtp_session=None):
-        """Rewrite send_mail method to change message_id"""
+        """Reescribir el método send_mail para cambiar el message_id"""
 
         smtp = smtp_session
         if not smtp:
@@ -169,29 +169,29 @@ class IrMailServer(models.Model):
 
         smtp_from, smtp_to_list, message = self._prepare_email_message(message, smtp)
 
-        # Do not actually send emails in testing mode!
+        # ¡No enviar correos realmente en modo test!
         if modules.module.current_test:
-            _test_logger.info("skip sending email in test mode")
+            _test_logger.info("omitir envío de correo en modo test")
             return message['Message-Id']
 
         try:
             message_id = message['Message-Id']
 
             if sys.version_info < (3, 7, 4):
-                # header folding code is buggy and adds redundant carriage
-                # returns, it got fixed in 3.7.4 thanks to bpo-34424
+                # el código de plegado de cabeceras tiene errores y añade retornos de carro redundantes,
+                # se arregló en 3.7.4 gracias a bpo-34424
                 message_str = message.as_string()
                 message_str = re.sub('\r+(?!\n)', '', message_str)
 
                 mail_options = []
                 if any((not is_ascii(addr) for addr in smtp_to_list + [smtp_from])):
-                    # non ascii email found, require SMTPUTF8 extension,
-                    # the relay may reject it
+                    # email no ascii encontrado, requiere extensión SMTPUTF8,
+                    # el relay podría rechazarlo
                     mail_options.append("SMTPUTF8")
                 smtp.sendmail(smtp_from, smtp_to_list, message_str, mail_options=mail_options)
             else:
                 resp = smtp.send_message(message, smtp_from, smtp_to_list)
-                # Change here: Update SES Message-ID
+                # Cambio aquí: Actualizar SES Message-ID
                 host_split = smtp._host.split(".")
                 (region, domain) = host_split[1], f"{host_split[2]}.{host_split[3]}"
                 if domain == "amazonaws.com":

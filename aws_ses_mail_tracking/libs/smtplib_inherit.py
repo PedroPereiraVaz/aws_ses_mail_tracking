@@ -37,7 +37,7 @@ class SMTPInherit(SMTP):
                 self.close()
                 raise SMTPRecipientsRefused(senderrs)
         if len(senderrs) == len(to_addrs):
-            # the server refused all our recipients
+            # el servidor rechazó todos nuestros destinatarios
             self._rset()
             raise SMTPRecipientsRefused(senderrs)
         (code, resp) = self.data(msg)
@@ -47,6 +47,6 @@ class SMTPInherit(SMTP):
             else:
                 self._rset()
             raise SMTPDataError(code, resp)
-        # if we got here then somebody got our mail
+        # si llegamos aquí, entonces alguien recibió nuestro correo
 
         return resp

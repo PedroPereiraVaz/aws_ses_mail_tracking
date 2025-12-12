@@ -43,14 +43,14 @@ class MailThread(models.AbstractModel):
 
     @api.model
     def _routing_handle_bounce(self, email_message, message_dict):
-        """Override _routing_handle_bounce method to process if send mail with SES, message_id had been changed"""
+        """Sobrescribe el método _routing_handle_bounce para procesar si el envío con SES cambió el message_id"""
 
         bounced_msg_ids = message_dict.get('bounced_msg_ids', [])
 
-        # SES Bounce/Complaint Analysis (RFC 3464 & RFC 5965)
+        # Análisis de Rebotes/Quejas SES (RFC 3464 y RFC 5965)
         bounce_details = []
         try:
-            # Check Root Headers for Report Type (Fallback)
+            # Verificar cabeceras raíz para tipo de reporte (Respaldo)
             is_generic_complaint = False
             is_generic_bounce = False
             
@@ -67,10 +67,10 @@ class MailThread(models.AbstractModel):
                 for part in email_message.walk():
                     content_type = part.get_content_type()
                     
-                    # 1. RFC 5965: Feedback Report (Complaint)
+                    # 1. RFC 5965: Reporte de Retroalimentación (Queja)
                     if content_type == 'message/feedback-report':
                         feedback_type = part.get('Feedback-Type')
-                        # If header not found on the part itself, parse the payload
+                        # Si no se encuentra la cabecera en la parte misma, analizar la carga útil
                         if not feedback_type:
                             payload = part.get_payload()
                             if isinstance(payload, str):
@@ -81,26 +81,26 @@ class MailThread(models.AbstractModel):
                             bounce_details.append(f"Complaint: {feedback_type}")
                             _logger.info(f"[SES BOUNCE] RFC 5965 Complaint: {feedback_type}")
 
-                    # 2. RFC 3464: Delivery Status Notification (Bounce)
+                    # 2. RFC 3464: Notificación de Estado de Entrega (Rebote)
                     elif content_type == 'message/delivery-status':
                         payload = part.get_payload()
                         status_code = None
                         
                         if isinstance(payload, list):
-                            # Rare, but if multipart
+                            # Raro, pero si es multiparte
                             for subpart in payload:
                                 if subpart.get('Status'):
                                     status_code = subpart.get('Status')
                         elif isinstance(payload, str):
-                            # DSN format: Header blocks separated by blank lines
-                            # Block 1: Per-Message fields
-                            # Block 2+: Per-Recipient fields (contains Action, Status)
+                            # Formato DSN: Bloques de cabecera separados por líneas en blanco
+                            # Bloque 1: Campos por mensaje
+                            # Bloque 2+: Campos por destinatario (contiene Action, Status)
                             blocks = payload.split('\n\n')
                             for block in blocks:
                                 msg_block = HeaderParser().parsestr(block)
                                 if msg_block.get('Status'):
                                     status_code = msg_block.get('Status')
-                                    # We take the first status found in a recipient block
+                                    # Tomamos el primer estado encontrado en un bloque de destinatario
                                     break
                                     
                         if status_code:
@@ -111,7 +111,7 @@ class MailThread(models.AbstractModel):
                                 bounce_details.append(f"Soft Bounce (Code: {status_code})")
                             _logger.info(f"[SES BOUNCE] RFC 3464 Status: {status_code}")
 
-            # Fallbacks if detailed parsing found nothing but headers matched
+            # Respaldos si el análisis detallado no encontró nada pero las cabeceras coincidieron
             if not bounce_details:
                 if is_generic_complaint:
                     bounce_details.append("Complaint (Generic/SES)")
@@ -127,51 +127,51 @@ class MailThread(models.AbstractModel):
         except Exception as e:
             _logger.error(f"[SES BOUNCE] Error analyzing bounce details: {e}")
         
-        # DEBUG: Log what we're searching for
+        # DEBUG: Registrar lo que estamos buscando
         _logger.info(f"[SES BOUNCE DEBUG] bounced_msg_ids from Odoo: {bounced_msg_ids}")
         
-        # Translate SES message IDs to original Odoo message IDs before calling super()
-        # This allows Odoo's core bounce handler to find mail.mail records correctly
+        # Traducir IDs de mensajes SES a IDs de Odoo originales antes de llamar a super()
+        # Esto permite que el manejador de rebotes estándar de Odoo encuentre los registros mail.mail correctamente
         if bounced_msg_ids:
-            # SES changes the domain: stored as @us-east-1.amazonses.com but bounces come as @email.amazonses.com
-            # So we need to search by the message ID part only (before @)
+            # SES cambia el dominio: almacenado como @us-east-1.amazonses.com pero los rebotes llegan como @email.amazonses.com
+            # Así que necesitamos buscar solo por la parte del ID del mensaje (antes de @)
             traces_with_ses_ids = self.env['mailing.trace']
             
             for bounced_id in bounced_msg_ids:
-                # Extract just the message ID portion (before @)
+                # Extraer solo la porción del ID de mensaje (antes de @)
                 # Example: <0100019ae9321ea7-...@email.amazonses.com> -> 0100019ae9321ea7-...
                 msg_id_part = bounced_id.strip('<>').split('@')[0]
                 _logger.info(f"[SES BOUNCE DEBUG] Searching for message ID part: {msg_id_part}")
                 
-                # Search for traces where ses_message_id contains this ID part
+                # Buscar rastros donde ses_message_id contenga esta parte del ID
                 traces = self.env['mailing.trace'].search([
                     ('ses_message_id', 'ilike', msg_id_part)
                 ])
                 traces_with_ses_ids |= traces
             
-            # DEBUG: Log what we found
+            # DEBUG: Registrar lo que encontramos
             _logger.info(f"[SES BOUNCE DEBUG] Found {len(traces_with_ses_ids)} traces with SES IDs")
             if traces_with_ses_ids:
                 _logger.info(f"[SES BOUNCE DEBUG] Trace ses_message_ids: {traces_with_ses_ids.mapped('ses_message_id')}")
                 _logger.info(f"[SES BOUNCE DEBUG] Trace message_ids: {traces_with_ses_ids.mapped('message_id')}")
             
-            # Extract the original Odoo message IDs from matching traces
+            # Extraer los Message-IDs originales de Odoo de los rastros coincidentes
             original_msg_ids = traces_with_ses_ids.mapped('message_id')
             
-            # Add original message IDs to bounced_msg_ids so Odoo's core handler can find them
+            # Añadir Message-IDs originales a bounced_msg_ids para que el manejador de Odoo los encuentre
             if original_msg_ids:
-                # Extend the list with original IDs (avoid duplicates)
+                # Extender la lista con IDs originales (evitar duplicados)
                 extended_bounced_msg_ids = list(set(bounced_msg_ids + original_msg_ids))
                 message_dict['bounced_msg_ids'] = extended_bounced_msg_ids
                 _logger.info(f"[SES BOUNCE DEBUG] Extended bounced_msg_ids: {extended_bounced_msg_ids}")
 
         super(MailThread, self)._routing_handle_bounce(email_message, message_dict)
 
-        # Fallback: handle bounces directly in mailing.trace if not found in mail.mail
+        # Respaldo: manejar rebotes directamente en mailing.trace si no se encuentran en mail.mail
         bounced_msg_ids = message_dict.get('bounced_msg_ids', [])
         traces_by_message_id = self.env['mailing.trace'].search([('message_id', 'in', bounced_msg_ids)])
         if bounced_msg_ids and not traces_by_message_id:
-            # Same logic: search by message ID part only
+            # Misma lógica: buscar solo por la parte del ID de mensaje
             for bounced_id in bounced_msg_ids:
                 msg_id_part = bounced_id.strip('<>').split('@')[0]
                 self.env['mailing.trace'].set_bounced(
