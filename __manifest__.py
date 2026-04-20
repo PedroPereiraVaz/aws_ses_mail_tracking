@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'AWS SES - Tracking Avanzado de Emails',
-    'version': '1.0',
-    'author': 'Pedro Pereira Vaz',
-    'website': 'https://wavext.io',
-    'category': 'Marketing/Email Marketing',
-    'summary': 'Seguimiento completo de emails enviados mediante Amazon SES',
-    'description': '''
+    "name": "BerpIA - AWS SES mail tracking",
+    "version": "18.0.1.0.0",
+    "category": "BerpIA",
+    "author": "Pedro Pereira Vaz",
+    "website": "https://wavext.io",
+    "summary": "Seguimiento completo de emails enviados mediante Amazon SES",
+    "description": """
         Tracking Avanzado de Emails con AWS SES
         ========================================
         
@@ -60,17 +60,17 @@
         -----------------
         Compatible con Odoo 18 Community y Enterprise.
         
-    ''',
-    'depends': [
-        'mail',
-        'mass_mailing',
+    """,
+    "depends": [
+        "mail",
+        "mass_mailing",
     ],
-    'data': [
-        'views/mailing_trace_view.xml',
+    "data": [
+        "views/mailing_trace_view.xml",
     ],
-    'images': [],
-    'installable': True,
-    'application': False,
-    'auto_install': False,
-    'license': 'LGPL-3',
+    "images": [],
+    "installable": True,
+    "application": False,
+    "auto_install": False,
+    "license": "LGPL-3",
 }
