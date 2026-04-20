@@ -8,9 +8,9 @@
 - [Estructura de Archivos Completa](#estructura-de-archivos-completa)
 - [Componentes Core vs Auxiliares](#componentes-core-vs-auxiliares)
 - [Documentación Técnica Detallada](#documentación-técnica-detallada)
-  - [Models (Modelos)](#models-modelos)
-  - [Views (Vistas)](#views-vistas)
-  - [Libs (Bibliotecas Personalizadas)](#libs-bibliotecas-personalizadas)
+    - [Models (Modelos)](#models-modelos)
+    - [Views (Vistas)](#views-vistas)
+    - [Libs (Bibliotecas Personalizadas)](#libs-bibliotecas-personalizadas)
 - [Flujos de Trabajo](#flujos-de-trabajo)
 - [Instalación y Configuración](#instalación-y-configuración)
 - [Dependencias](#dependencias)
@@ -140,7 +140,7 @@ FLUJO DE DATOS:
 ## 📂 Estructura de Archivos Completa
 
 ```
-aws_ses_mail_tracking/
+berpia_aws_ses_mail_tracking/
 │
 ├── __init__.py                          # Punto de entrada del módulo
 ├── __manifest__.py                      # Metadatos y configuración del módulo
@@ -167,11 +167,11 @@ aws_ses_mail_tracking/
 
 - **`__init__.py`**: Importa el directorio `models`. Es el punto de entrada cuando Odoo carga el módulo.
 - **`__manifest__.py`**: Archivo de configuración que define:
-  - Nombre del módulo
-  - Versión
-  - Dependencias (`mail`, `mass_mailing`)
-  - Archivos de datos y vistas a cargar
-  - Metadatos (autor, licencia, categoría)
+    - Nombre del módulo
+    - Versión
+    - Dependencias (`mail`, `mass_mailing`)
+    - Archivos de datos y vistas a cargar
+    - Metadatos (autor, licencia, categoría)
 
 #### 📁 models/
 
@@ -691,13 +691,11 @@ Respuesta: b'Ok 0100019ae9321ea7-f8c2d1a3-b5e4-4f6a-9c7d-1234567890ab'
 **Explicación de Herencia de Vistas en Odoo**:
 
 1. **`inherit_id`**: Referencia a la vista que queremos extender
-
-   - `mass_mailing.mailing_trace_view_form` es la vista original del módulo `mass_mailing`
+    - `mass_mailing.mailing_trace_view_form` es la vista original del módulo `mass_mailing`
 
 2. **`xpath`**: Selector XML para encontrar dónde insertar nuestro código
-
-   - `expr="//field[@name='message_id']"`: Busca el campo llamado `message_id`
-   - `position="after"`: Inserta nuestro campo después de ese
+    - `expr="//field[@name='message_id']"`: Busca el campo llamado `message_id`
+    - `position="after"`: Inserta nuestro campo después de ese
 
 3. **Resultado Visual**:
 
@@ -943,8 +941,8 @@ RESULTADO: Email correctamente correlacionado y estadísticas actualizadas
 2. Su cliente incluye `References: <456@us-east-1.amazonses.com>`
 3. **MailThread** extrae estas referencias
 4. **Doble Búsqueda**:
-   - Primero intenta buscar por `message_id` (por si no es SES)
-   - Luego busca por `ses_message_id` usando búsqueda normalizada
+    - Primero intenta buscar por `message_id` (por si no es SES)
+    - Luego busca por `ses_message_id` usando búsqueda normalizada
 5. **Base de Datos** marca el email como "Abierto" y "Respondido"
 6. **Odoo Core** crea el mensaje en el hilo de conversación correcto
 
@@ -957,10 +955,10 @@ RESULTADO: Email correctamente correlacionado y estadísticas actualizadas
 1. **Odoo 18** instalado y funcionando
 2. **AWS SES** configurado y verificado
 3. **Credenciales SMTP** de AWS SES:
-   - Servidor: `email-smtp.us-east-1.amazonaws.com`
-   - Puerto: `587` (STARTTLS) o `465` (SSL)
-   - Usuario: Tu usuario SMTP de SES
-   - Contraseña: Tu contraseña SMTP de SES
+    - Servidor: `email-smtp.us-east-1.amazonaws.com`
+    - Puerto: `587` (STARTTLS) o `465` (SSL)
+    - Usuario: Tu usuario SMTP de SES
+    - Contraseña: Tu contraseña SMTP de SES
 
 ### Pasos de Instalación:
 
@@ -968,7 +966,7 @@ RESULTADO: Email correctamente correlacionado y estadísticas actualizadas
 
 ```bash
 cd /path/to/odoo/addons
-git clone <repo-url> aws_ses_mail_tracking
+git clone <repo-url> berpia_aws_ses_mail_tracking
 # O copia el directorio manualmente
 ```
 

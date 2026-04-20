@@ -1,6 +1,6 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
-# 	* aws_ses_mail_tracking
+# 	* berpia_aws_ses_mail_tracking
 #
 msgid ""
 msgstr ""
@@ -15,9 +15,9 @@ msgstr ""
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
 
-#. module: aws_ses_mail_tracking
+#. module: berpia_aws_ses_mail_tracking
 #. odoo-python
-#: code:addons/aws_ses_mail_tracking/models/ir_mail_server.py:0
+#: code:addons/berpia_aws_ses_mail_tracking/models/ir_mail_server.py:0
 msgid ""
 "Could not load your certificate / private key. \n"
 "%s"
@@ -25,25 +25,25 @@ msgstr ""
 "No se pudo cargar su certificado / clave privada. \n"
 "%s"
 
-#. module: aws_ses_mail_tracking
-#: model:ir.model,name:aws_ses_mail_tracking.model_mail_thread
+#. module: berpia_aws_ses_mail_tracking
+#: model:ir.model,name:berpia_aws_ses_mail_tracking.model_mail_thread
 msgid "Email Thread"
 msgstr "Hilo de correo electrónico"
 
-#. module: aws_ses_mail_tracking
+#. module: berpia_aws_ses_mail_tracking
 #. odoo-python
-#: code:addons/aws_ses_mail_tracking/models/ir_mail_server.py:0
+#: code:addons/berpia_aws_ses_mail_tracking/models/ir_mail_server.py:0
 msgid "Mail Delivery Failed"
 msgstr "Fallo en la entrega del correo"
 
-#. module: aws_ses_mail_tracking
-#: model:ir.model,name:aws_ses_mail_tracking.model_ir_mail_server
+#. module: berpia_aws_ses_mail_tracking
+#: model:ir.model,name:berpia_aws_ses_mail_tracking.model_ir_mail_server
 msgid "Mail Server"
 msgstr "Servidor de correo"
 
-#. module: aws_ses_mail_tracking
+#. module: berpia_aws_ses_mail_tracking
 #. odoo-python
-#: code:addons/aws_ses_mail_tracking/models/ir_mail_server.py:0
+#: code:addons/berpia_aws_ses_mail_tracking/models/ir_mail_server.py:0
 msgid ""
 "Mail delivery failed via SMTP server '%s'.\n"
 "%s: %s"
@@ -51,20 +51,20 @@ msgstr ""
 "Fallo en la entrega del correo a través del servidor SMTP '%s'.\n"
 "%s: %s"
 
-#. module: aws_ses_mail_tracking
-#: model:ir.model,name:aws_ses_mail_tracking.model_mailing_trace
+#. module: berpia_aws_ses_mail_tracking
+#: model:ir.model,name:berpia_aws_ses_mail_tracking.model_mailing_trace
 msgid "Mailing Statistics"
 msgstr "Estadísticas de envío"
 
-#. module: aws_ses_mail_tracking
+#. module: berpia_aws_ses_mail_tracking
 #. odoo-python
-#: code:addons/aws_ses_mail_tracking/models/ir_mail_server.py:0
+#: code:addons/berpia_aws_ses_mail_tracking/models/ir_mail_server.py:0
 msgid "Missing SMTP Server"
 msgstr "Servidor SMTP faltante"
 
-#. module: aws_ses_mail_tracking
+#. module: berpia_aws_ses_mail_tracking
 #. odoo-python
-#: code:addons/aws_ses_mail_tracking/models/ir_mail_server.py:0
+#: code:addons/berpia_aws_ses_mail_tracking/models/ir_mail_server.py:0
 msgid ""
 "Please define at least one SMTP server, or provide the SMTP parameters "
 "explicitly."
@@ -72,15 +72,15 @@ msgstr ""
 "Por favor, defina al menos un servidor SMTP, o proporcione los parámetros "
 "SMTP explícitamente."
 
-#. module: aws_ses_mail_tracking
-#: model:ir.model.fields,field_description:aws_ses_mail_tracking.field_mailing_trace__ses_message_id
-#: model_terms:ir.ui.view,arch_db:aws_ses_mail_tracking.mailing_trace_form_view_inherit
+#. module: berpia_aws_ses_mail_tracking
+#: model:ir.model.fields,field_description:berpia_aws_ses_mail_tracking.field_mailing_trace__ses_message_id
+#: model_terms:ir.ui.view,arch_db:berpia_aws_ses_mail_tracking.mailing_trace_form_view_inherit
 msgid "SES Message-ID"
 msgstr "SES Message-ID"
 
-#. module: aws_ses_mail_tracking
+#. module: berpia_aws_ses_mail_tracking
 #. odoo-python
-#: code:addons/aws_ses_mail_tracking/models/ir_mail_server.py:0
+#: code:addons/berpia_aws_ses_mail_tracking/models/ir_mail_server.py:0
 msgid ""
 "The private key or the certificate is not a valid file. \n"
 "%s"
@@ -88,15 +88,15 @@ msgstr ""
 "La clave privada o el certificado no es un archivo válido. \n"
 "%s"
 
-#. module: aws_ses_mail_tracking
+#. module: berpia_aws_ses_mail_tracking
 #. odoo-python
-#: code:addons/aws_ses_mail_tracking/models/ir_mail_server.py:0
+#: code:addons/berpia_aws_ses_mail_tracking/models/ir_mail_server.py:0
 msgid "The server \"%s\" cannot be used because it is archived."
 msgstr "El servidor \"%s\" no se puede utilizar porque está archivado."
 
-#. module: aws_ses_mail_tracking
+#. module: berpia_aws_ses_mail_tracking
 #. odoo-python
-#: code:addons/aws_ses_mail_tracking/models/ir_mail_server.py:0
+#: code:addons/berpia_aws_ses_mail_tracking/models/ir_mail_server.py:0
 msgid ""
 "Your Odoo Server does not support SMTP-over-SSL. You could use STARTTLS "
 "instead. If SSL is needed, an upgrade to Python 2.6 on the server-side "
