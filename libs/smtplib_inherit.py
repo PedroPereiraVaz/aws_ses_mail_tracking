@@ -1,13 +1,27 @@
 import re
 
-from smtplib import SMTP, CRLF, SMTPSenderRefused, SMTPRecipientsRefused, SMTPDataError
+from smtplib import SMTP, SMTP_SSL, CRLF, SMTPSenderRefused, SMTPRecipientsRefused, SMTPDataError
 
 
 def _fix_eols(data):
     return re.sub(r'(?:\r\n|\n|\r(?!\n))', CRLF, data)
 
 
-class SMTPInherit(SMTP):
+class _SESDataCaptureMixin:
+    """Captura la respuesta del comando DATA (contiene el SES Message-ID)
+    en ``self._ses_data_response`` para poder leerla tras send_message/sendmail
+    sin depender de detalles de implementación de stdlib."""
+
+    _ses_data_response = None
+
+    def data(self, msg):
+        code, resp = super().data(msg)
+        if code == 250:
+            self._ses_data_response = resp
+        return code, resp
+
+
+class SMTPInherit(_SESDataCaptureMixin, SMTP):
 
     def sendmail(self, from_addr, to_addrs, msg, mail_options=(),rcpt_options=()):
         self.ehlo_or_helo_if_needed()
@@ -50,3 +64,8 @@ class SMTPInherit(SMTP):
         # si llegamos aquí, entonces alguien recibió nuestro correo
 
         return resp
+
+
+class SMTPInheritSSL(_SESDataCaptureMixin, SMTP_SSL):
+    """Variante SSL (puerto 465) que también captura la respuesta DATA."""
+    pass

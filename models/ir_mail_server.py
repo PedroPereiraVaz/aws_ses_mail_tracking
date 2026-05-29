@@ -178,7 +178,9 @@ class IrMailServer(models.Model):
                         "should do the trick."
                     )
                 )
-            connection = smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=SMTP_TIMEOUT)
+            connection = smtplib_inherit.SMTPInheritSSL(
+                smtp_server, smtp_port, timeout=SMTP_TIMEOUT
+            )
         else:
             # Cambio aquí: usar smtplib_inherit para funcionalidad extendida
             connection = smtplib_inherit.SMTPInherit(
@@ -271,34 +273,7 @@ class IrMailServer(models.Model):
                     smtp_from, smtp_to_list, message_str, mail_options=mail_options
                 )
             else:
-                resp = smtp.send_message(message, smtp_from, smtp_to_list)
-                # Cambio aquí: Actualizar SES Message-ID
-                host_split = smtp._host.split(".")
-                (region, domain) = host_split[1], f"{host_split[2]}.{host_split[3]}"
-                if domain == "amazonaws.com":
-                    ses_message_id = (
-                        f"<{resp.decode().split(' ')[1]}@{region}.amazonses.com>"
-                    )
-                    _logger.info(f"[SES SEND DEBUG] Original message_id: {message_id}")
-                    _logger.info(
-                        f"[SES SEND DEBUG] Generated ses_message_id: {ses_message_id}"
-                    )
-                    trace = self.env["mailing.trace"].search(
-                        [("message_id", "=", message_id)]
-                    )
-                    _logger.info(
-                        f"[SES SEND DEBUG] Found {len(trace)} mailing.trace records for message_id"
-                    )
-                    if trace:
-                        trace[0].ses_message_id = ses_message_id
-                        _logger.info(
-                            f"[SES SEND DEBUG] Stored ses_message_id in trace ID: {trace[0].id}"
-                        )
-                    else:
-                        _logger.warning(
-                            f"[SES SEND DEBUG] No mailing.trace found for message_id: {message_id} - ses_message_id not stored!"
-                        )
-                #####
+                smtp.send_message(message, smtp_from, smtp_to_list)
 
             # do not quit() a pre-established smtp_session
             if not smtp_session:
@@ -314,4 +289,56 @@ class IrMailServer(models.Model):
             msg = _("Mail delivery failed via SMTP server '%s'.\n%s: %s", *params)
             _logger.info(msg)
             raise MailDeliveryException(_("Mail Delivery Failed"), msg)
+
+        # Correlación SES Message-ID -> mailing.trace.
+        # Aislado: cualquier fallo aquí se loguea pero NO marca el envío como fallido,
+        # ya que el correo ya fue aceptado por el servidor SMTP en este punto.
+        try:
+            self._store_ses_message_id(smtp, message_id)
+        except Exception as e:
+            _logger.warning(
+                "[SES SEND] No se pudo almacenar ses_message_id para %s: %s",
+                message_id, e,
+            )
+
         return message_id
+
+    def _store_ses_message_id(self, smtp, message_id):
+        host = getattr(smtp, "_host", "") or ""
+        if not host.endswith("amazonaws.com"):
+            return
+
+        resp = getattr(smtp, "_ses_data_response", None)
+        if not isinstance(resp, (bytes, bytearray)):
+            _logger.warning(
+                "[SES SEND] Respuesta DATA no disponible o de tipo inesperado (%s); "
+                "no se almacena ses_message_id para %s",
+                type(resp).__name__, message_id,
+            )
+            return
+
+        try:
+            ses_id_token = resp.decode(errors="replace").split(" ")[1]
+        except IndexError:
+            _logger.warning(
+                "[SES SEND] Respuesta DATA inesperada de SES: %r", resp,
+            )
+            return
+
+        # host típico: email-smtp.us-east-1.amazonaws.com -> region = 'us-east-1'
+        host_parts = host.split(".")
+        region = host_parts[1] if len(host_parts) >= 4 else "us-east-1"
+        ses_message_id = f"<{ses_id_token}@{region}.amazonses.com>"
+
+        _logger.info("[SES SEND] %s -> %s", message_id, ses_message_id)
+
+        trace = self.env["mailing.trace"].sudo().search(
+            [("message_id", "=", message_id)], limit=1,
+        )
+        if trace:
+            trace.ses_message_id = ses_message_id
+        else:
+            _logger.info(
+                "[SES SEND] Sin mailing.trace para %s; ses_message_id no persistido",
+                message_id,
+            )
